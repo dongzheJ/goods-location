@@ -1,0 +1,257 @@
+import React, { useState, useEffect, useMemo } from 'react';
+import MapView from './components/MapView';
+import SearchBar from './components/SearchBar';
+import productsData from './data/products.json';
+import initialShelves from './data/shelves.json';
+import { 
+  Package, 
+  Map as MapIcon, 
+  Edit, 
+  Download, 
+  Plus, 
+  Trash2, 
+  Layout, 
+  Info,
+  X,
+  Sparkles
+} from 'lucide-react';
+import { detectColoredZones } from './utils/autoMapper';
+
+function App() {
+  const [products] = useState(productsData);
+  const [shelves, setShelves] = useState(initialShelves);
+  const [searchResult, setSearchResult] = useState(null);
+  const [activeShelfId, setActiveShelfId] = useState(null);
+  const [mappingMode, setMappingMode] = useState(false);
+  const [newShelfName, setNewShelfName] = useState('');
+
+  // Helper to simplify location (e.g., 2F-BH28-07 -> B-28)
+  const simplifyLocation = (loc) => {
+    if (!loc) return '';
+    const parts = loc.split('-');
+    if (parts.length < 2) return loc;
+    
+    const shelfPart = parts[1]; // e.g. BH28
+    // Extract first letter and digits
+    const letter = shelfPart.charAt(0);
+    const numbers = shelfPart.match(/\d+/);
+    if (letter && numbers) {
+      return `${letter}-${numbers[0]}`;
+    }
+    return shelfPart;
+  };
+
+  // Search logic
+  const handleSearch = (query) => {
+    if (!query) {
+      setSearchResult(null);
+      setActiveShelfId(null);
+      return;
+    }
+    const result = products.find(p => p.id.includes(query) || p.name.toLowerCase().includes(query.toLowerCase()));
+    setSearchResult(result);
+    if (result) {
+      // Use simplified location for shelf lookup (e.g., 2F-BH28-07 -> B-28)
+      const shelfId = simplifyLocation(result.location);
+      setActiveShelfId(shelfId);
+    } else {
+      setActiveShelfId(null);
+    }
+  };
+
+  const handleMappingComplete = (shelf) => {
+    const shelfName = prompt("Enter Shelf ID (e.g. B-28):", newShelfName) || `Shelf-${Date.now()}`;
+    setShelves(prev => ({
+      ...prev,
+      [shelfName]: shelf
+    }));
+  };
+
+  const exportData = () => {
+    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(shelves, null, 2));
+    const downloadAnchorNode = document.createElement('a');
+    downloadAnchorNode.setAttribute("href", dataStr);
+    downloadAnchorNode.setAttribute("download", "shelves.json");
+    document.body.appendChild(downloadAnchorNode);
+    downloadAnchorNode.click();
+    downloadAnchorNode.remove();
+  };
+
+  const removeShelf = (id) => {
+    const newShelves = { ...shelves };
+    delete newShelves[id];
+    setShelves(newShelves);
+  };
+
+  const handleShelfSelect = (id) => {
+    if (mappingMode) {
+      const newName = prompt(`Rename Shelf "${id}" to:`, id);
+      if (newName && newName !== id) {
+        setShelves(prev => {
+          const updated = { ...prev };
+          updated[newName] = updated[id];
+          delete updated[id];
+          return updated;
+        });
+        if (activeShelfId === id) setActiveShelfId(newName);
+      }
+    } else {
+      setActiveShelfId(id);
+    }
+  };
+
+  const handleAutoMap = async () => {
+    try {
+      const detected = await detectColoredZones('/shelf-blueprint.jpg');
+      setShelves(prev => ({ ...prev, ...detected }));
+      alert(`Detected ${Object.keys(detected).length} new zones!`);
+    } catch (err) {
+      console.error(err);
+      alert("Failed to auto-map. Check console for details.");
+    }
+  };
+
+  return (
+    <div className="flex flex-col h-screen bg-slate-950 text-slate-100 font-sans selection:bg-blue-500/30">
+      {/* Header */}
+      <header className="flex items-center justify-between px-8 py-4 bg-slate-900/50 backdrop-blur-md border-b border-slate-800 z-10">
+        <div className="flex items-center gap-3">
+          <div className="bg-blue-600 p-2 rounded-lg shadow-lg shadow-blue-500/20">
+            <MapIcon className="w-6 h-6 text-white" />
+          </div>
+          <h1 className="text-xl font-bold tracking-tight">GeoGoods <span className="text-blue-500 text-sm font-medium ml-1">Locator Pro</span></h1>
+        </div>
+        
+        <SearchBar onSearch={handleSearch} />
+
+        <div className="flex items-center gap-3">
+          <button 
+            onClick={() => setMappingMode(!mappingMode)}
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all ${
+              mappingMode 
+              ? 'bg-amber-500 text-amber-950 shadow-lg shadow-amber-500/20' 
+              : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
+            }`}
+          >
+            <Edit className="w-4 h-4" />
+            {mappingMode ? 'Exit Mapping' : 'Mapping Mode'}
+          </button>
+          
+          {mappingMode && (
+            <button 
+              onClick={exportData}
+              className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-lg font-medium hover:bg-emerald-500 transition-all shadow-lg shadow-emerald-500/20"
+            >
+              <Download className="w-4 h-4" />
+              Export
+            </button>
+          )}
+        </div>
+      </header>
+
+      {/* Main Content */}
+      <main className="flex-1 flex overflow-hidden relative">
+        {/* Sidebar for info or mapping list */}
+        <aside className="w-80 bg-slate-900/30 backdrop-blur-sm border-r border-slate-800 p-6 flex flex-col gap-6 overflow-y-auto">
+          {searchResult && (
+            <div className="bg-slate-800/80 rounded-2xl p-5 border border-blue-500/30 shadow-xl animate-in fade-in slide-in-from-left-4 duration-500">
+              <div className="flex items-start justify-between mb-4">
+                <div className="p-2 bg-blue-500/10 rounded-lg">
+                  <Package className="w-6 h-6 text-blue-400" />
+                </div>
+                <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-1 bg-blue-500/20 text-blue-300 rounded-md">Found</span>
+              </div>
+              <h3 className="text-lg font-bold mb-1">{searchResult.name}</h3>
+              <p className="text-slate-400 text-sm font-mono mb-4 text-xs">SKU: {searchResult.id}</p>
+              
+              <div className="space-y-3">
+                <div className="flex items-center justify-between p-3 bg-slate-900/50 rounded-xl border border-slate-700">
+                  <span className="text-xs text-slate-400">Target Location</span>
+                  <span className="font-bold text-blue-400 font-mono italic">{simplifyLocation(searchResult.location)}</span>
+                </div>
+                <div className="flex items-center justify-between p-3 bg-slate-900/50 rounded-xl border border-slate-700">
+                  <span className="text-xs text-slate-400">Original Code</span>
+                  <span className="text-slate-400 text-[10px] font-mono">{searchResult.location}</span>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {!searchResult && !mappingMode && (
+            <div className="flex-1 flex flex-col items-center justify-center text-center p-6 text-slate-500">
+              <div className="w-16 h-16 rounded-full bg-slate-800/50 flex items-center justify-center mb-4">
+                <Info className="w-8 h-8 opacity-20" />
+              </div>
+              <p className="text-sm">Enter a product SKU above to locate it on the map.</p>
+            </div>
+          )}
+
+          {mappingMode && (
+            <div className="animate-in fade-in duration-300">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="font-bold text-slate-300 flex items-center gap-2">
+                  <Layout className="w-4 h-4" /> Shelves
+                </h3>
+                <div className="flex items-center gap-2">
+                  <button 
+                    onClick={handleAutoMap}
+                    title="Auto-Detect Zones A, B, C, D"
+                    className="p-1.5 bg-blue-600/20 text-blue-400 hover:bg-blue-600/30 rounded-lg transition-all border border-blue-500/20"
+                  >
+                    <Sparkles className="w-4 h-4" />
+                  </button>
+                  <span className="text-xs bg-slate-800 px-2 py-0.5 rounded-full text-slate-500">{Object.keys(shelves).length}</span>
+                </div>
+              </div>
+              <p className="text-xs text-slate-500 mb-4 px-1">Click two points on the map to define a shelf area.</p>
+              <div className="space-y-2">
+                {Object.entries(shelves).map(([id, s]) => (
+                  <div key={id} className="group flex items-center justify-between p-3 bg-slate-800/50 hover:bg-slate-800 border border-slate-700/50 rounded-xl transition-all">
+                    <div className="flex flex-col">
+                      <span className="text-sm font-bold text-slate-300">{id}</span>
+                      <span className="text-[10px] text-slate-500 font-mono italic">X:{s.x} Y:{s.y}</span>
+                    </div>
+                    <button 
+                      onClick={() => removeShelf(id)}
+                      className="p-1.5 text-slate-600 hover:text-red-400 hover:bg-red-400/10 rounded-md transition-all opacity-0 group-hover:opacity-100"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </aside>
+
+        {/* Map View Area */}
+        <div className="flex-1 p-6 relative">
+          <MapView 
+            imageUrl="/shelf-blueprint.jpg" 
+            width={1206} 
+            height={1396} 
+            shelves={shelves}
+            activeShelfId={activeShelfId}
+            mappingMode={mappingMode}
+            onMappingComplete={handleMappingComplete}
+            onShelfSelect={handleShelfSelect}
+          />
+          
+          {/* Legend / Overlay info */}
+          <div className="absolute bottom-10 right-10 z-10 p-4 bg-slate-900/80 backdrop-blur-md border border-slate-700 rounded-2xl shadow-2xl flex flex-col gap-2">
+            <div className="flex items-center gap-3 text-xs">
+              <div className="w-3 h-3 rounded-full bg-blue-500/50 border border-blue-400 shadow-[0_0_8px_rgba(59,130,246,0.5)]"></div>
+              <span className="text-slate-400">Regular Shelf</span>
+            </div>
+            <div className="flex items-center gap-3 text-xs">
+              <div className="w-3 h-3 rounded-full bg-red-500 shadow-[0_0_12px_rgba(239,68,68,0.8)] animate-pulse"></div>
+              <span className="text-slate-200 font-medium">Located Item</span>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+  );
+}
+
+export default App;
