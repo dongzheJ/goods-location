@@ -18,7 +18,7 @@ const SearchBar = ({ onSearch }) => {
       <input
         type="text"
         className="block w-full pl-10 pr-3 py-3 border border-slate-700 rounded-xl leading-5 bg-slate-800 text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all shadow-lg"
-        placeholder="Enter Product ID or Name..."
+        placeholder="搜索编号或商品名称..."
         value={query}
         onChange={handleChange}
       />

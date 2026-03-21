@@ -60,7 +60,7 @@ function App() {
   };
 
   const handleMappingComplete = (shelf) => {
-    const shelfName = prompt("Enter Shelf ID (e.g. B-28):", newShelfName) || `Shelf-${Date.now()}`;
+    const shelfName = prompt("请输入货架编号 (例如 B-28):", newShelfName) || `货架-${Date.now()}`;
     setShelves(prev => ({
       ...prev,
       [shelfName]: shelf
@@ -85,7 +85,7 @@ function App() {
 
   const handleShelfSelect = (id) => {
     if (mappingMode) {
-      const newName = prompt(`Rename Shelf "${id}" to:`, id);
+      const newName = prompt(`将货架 "${id}" 重命名为:`, id);
       if (newName && newName !== id) {
         setShelves(prev => {
           const updated = { ...prev };
@@ -119,7 +119,7 @@ function App() {
           <div className="bg-blue-600 p-2 rounded-lg shadow-lg shadow-blue-500/20">
             <MapIcon className="w-6 h-6 text-white" />
           </div>
-          <h1 className="text-xl font-bold tracking-tight">GeoGoods <span className="text-blue-500 text-sm font-medium ml-1">Locator Pro</span></h1>
+          <h1 className="text-xl font-bold tracking-tight">GeoGoods <span className="text-blue-500 text-sm font-medium ml-1">货位导航系统</span></h1>
         </div>
         
         <SearchBar onSearch={handleSearch} />
@@ -134,7 +134,7 @@ function App() {
             }`}
           >
             <Edit className="w-4 h-4" />
-            {mappingMode ? 'Exit Mapping' : 'Mapping Mode'}
+            {mappingMode ? '退出标注' : '标注模式'}
           </button>
           
           {mappingMode && (
@@ -143,7 +143,7 @@ function App() {
               className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-lg font-medium hover:bg-emerald-500 transition-all shadow-lg shadow-emerald-500/20"
             >
               <Download className="w-4 h-4" />
-              Export
+              导出
             </button>
           )}
         </div>
@@ -166,11 +166,11 @@ function App() {
               
               <div className="space-y-3">
                 <div className="flex items-center justify-between p-3 bg-slate-900/50 rounded-xl border border-slate-700">
-                  <span className="text-xs text-slate-400">Target Location</span>
+                  <span className="text-xs text-slate-400">目标货位</span>
                   <span className="font-bold text-blue-400 font-mono italic">{simplifyLocation(searchResult.location)}</span>
                 </div>
                 <div className="flex items-center justify-between p-3 bg-slate-900/50 rounded-xl border border-slate-700">
-                  <span className="text-xs text-slate-400">Original Code</span>
+                  <span className="text-xs text-slate-400">原始编码</span>
                   <span className="text-slate-400 text-[10px] font-mono">{searchResult.location}</span>
                 </div>
               </div>
@@ -182,7 +182,7 @@ function App() {
               <div className="w-16 h-16 rounded-full bg-slate-800/50 flex items-center justify-center mb-4">
                 <Info className="w-8 h-8 opacity-20" />
               </div>
-              <p className="text-sm">Enter a product SKU above to locate it on the map.</p>
+              <p className="text-sm">在上方输入商品名称或编号即可快速定位。</p>
             </div>
           )}
 
@@ -190,12 +190,12 @@ function App() {
             <div className="animate-in fade-in duration-300">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="font-bold text-slate-300 flex items-center gap-2">
-                  <Layout className="w-4 h-4" /> Shelves
+                  <Layout className="w-4 h-4" /> 货架列表
                 </h3>
                 <div className="flex items-center gap-2">
                   <button 
                     onClick={handleAutoMap}
-                    title="Auto-Detect Zones A, B, C, D"
+                    title="自动识别分区 (A, B, C, D)"
                     className="p-1.5 bg-blue-600/20 text-blue-400 hover:bg-blue-600/30 rounded-lg transition-all border border-blue-500/20"
                   >
                     <Sparkles className="w-4 h-4" />
@@ -203,7 +203,7 @@ function App() {
                   <span className="text-xs bg-slate-800 px-2 py-0.5 rounded-full text-slate-500">{Object.keys(shelves).length}</span>
                 </div>
               </div>
-              <p className="text-xs text-slate-500 mb-4 px-1">Click two points on the map to define a shelf area.</p>
+              <p className="text-xs text-slate-500 mb-4 px-1">在地图上按住并拖动鼠标即可框选新货架。</p>
               <div className="space-y-2">
                 {Object.entries(shelves).map(([id, s]) => (
                   <div key={id} className="group flex items-center justify-between p-3 bg-slate-800/50 hover:bg-slate-800 border border-slate-700/50 rounded-xl transition-all">
@@ -241,11 +241,11 @@ function App() {
           <div className="absolute bottom-10 right-10 z-10 p-4 bg-slate-900/80 backdrop-blur-md border border-slate-700 rounded-2xl shadow-2xl flex flex-col gap-2">
             <div className="flex items-center gap-3 text-xs">
               <div className="w-3 h-3 rounded-full bg-blue-500/50 border border-blue-400 shadow-[0_0_8px_rgba(59,130,246,0.5)]"></div>
-              <span className="text-slate-400">Regular Shelf</span>
+              <span className="text-slate-400">常规货架</span>
             </div>
             <div className="flex items-center gap-3 text-xs">
               <div className="w-3 h-3 rounded-full bg-red-500 shadow-[0_0_12px_rgba(239,68,68,0.8)] animate-pulse"></div>
-              <span className="text-slate-200 font-medium">Located Item</span>
+              <span className="text-slate-200 font-medium">目标货位</span>
             </div>
           </div>
         </div>
