@@ -80,23 +80,8 @@ const MapController = ({ bounds, mappingMode, targetCenter }) => {
 
   useEffect(() => {
     if (targetCenter) {
-      // Calculate boundaries around target to use fitBounds padding features
-      const targetBounds = [
-        [targetCenter[0] - 1, targetCenter[1] - 1],
-        [targetCenter[0] + 1, targetCenter[1] + 1]
-      ];
-
-      // On mobile, the bottom sheet covers ~45% of the screen. 
-      // Add padding to perfectly center the pin in the *visible* area.
-      const isMobile = window.innerWidth < 768;
-      const pb = isMobile ? window.innerHeight * 0.45 : 0;
-
-      // "轻微的缩进" Fly to center with a specified zoom level and bottom padding
-      map.flyToBounds(targetBounds, {
-        maxZoom: 0.2,
-        paddingBottomRight: [0, pb],
-        duration: 1.2
-      });
+      // "轻微的缩进" Fly to center with a specified zoom level (e.g. 1)
+      map.flyTo(targetCenter, 0.2, { duration: 1.2 });
     } else if (hasInitialized.current && bounds) {
       map.flyToBounds(bounds, { duration: 1.2 });
     }
