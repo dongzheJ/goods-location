@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { 
-  MapContainer, 
-  ImageOverlay, 
-  useMap, 
-  useMapEvents, 
-  Rectangle, 
+import {
+  MapContainer,
+  ImageOverlay,
+  useMap,
+  useMapEvents,
+  Rectangle,
   Tooltip,
   Popup,
   Marker
@@ -58,7 +58,7 @@ const MapEvents = ({ onMapClick, onMouseMove, onMouseDown, onMouseUp }) => {
 const MapController = ({ bounds, mappingMode, targetCenter }) => {
   const map = useMap();
   const hasInitialized = useRef(false);
-  
+
   useEffect(() => {
     if (bounds && !hasInitialized.current) {
       map.fitBounds(bounds);
@@ -80,8 +80,23 @@ const MapController = ({ bounds, mappingMode, targetCenter }) => {
 
   useEffect(() => {
     if (targetCenter) {
-      // "轻微的缩进" Fly to center with a specified zoom level (e.g. 1)
-      map.flyTo(targetCenter, 1, { duration: 1.2 });
+      // Calculate boundaries around target to use fitBounds padding features
+      const targetBounds = [
+        [targetCenter[0] - 1, targetCenter[1] - 1],
+        [targetCenter[0] + 1, targetCenter[1] + 1]
+      ];
+
+      // On mobile, the bottom sheet covers ~45% of the screen. 
+      // Add padding to perfectly center the pin in the *visible* area.
+      const isMobile = window.innerWidth < 768;
+      const pb = isMobile ? window.innerHeight * 0.45 : 0;
+
+      // "轻微的缩进" Fly to center with a specified zoom level and bottom padding
+      map.flyToBounds(targetBounds, {
+        maxZoom: 0.2,
+        paddingBottomRight: [0, pb],
+        duration: 1.2
+      });
     } else if (hasInitialized.current && bounds) {
       map.flyToBounds(bounds, { duration: 1.2 });
     }
@@ -90,11 +105,11 @@ const MapController = ({ bounds, mappingMode, targetCenter }) => {
   return null;
 };
 
-const MapView = ({ 
-  imageUrl, 
-  width, 
-  height, 
-  shelves = {}, 
+const MapView = ({
+  imageUrl,
+  width,
+  height,
+  shelves = {},
   activeShelfId = null,
   mappingMode = false,
   onMapClick,
@@ -118,12 +133,12 @@ const MapView = ({
     const { lat, lng } = e.latlng;
     const end = { x: Math.round(lng), y: Math.round(lat) };
     console.log("MouseUp at:", end);
-    
+
     const x = Math.min(drawingStart.x, end.x);
     const y = Math.min(drawingStart.y, end.y);
     const w = Math.abs(end.x - drawingStart.x);
     const h = Math.abs(end.y - drawingStart.y);
-    
+
     if (w > 5 && h > 5) {
       console.log("Mapping Complete:", { x, y, w, h });
       onMappingComplete({ x, y, w, h });
@@ -149,8 +164,8 @@ const MapView = ({
   ] : null;
 
   const activeShelf = activeShelfId ? shelves[activeShelfId] : null;
-  const targetCenter = activeShelf 
-    ? [activeShelf.y + activeShelf.h / 2, activeShelf.x + activeShelf.w / 2] 
+  const targetCenter = activeShelf
+    ? [activeShelf.y + activeShelf.h / 2, activeShelf.x + activeShelf.w / 2]
     : null;
 
   return (
@@ -164,22 +179,22 @@ const MapView = ({
         attributionControl={false}
       >
         <MapController bounds={bounds} mappingMode={mappingMode} targetCenter={targetCenter} />
-        <MapEvents 
-          onMouseDown={handleMouseDown} 
-          onMouseUp={handleMouseUp} 
-          onMapClick={() => {}} 
-          onMouseMove={handleMouseMove} 
+        <MapEvents
+          onMouseDown={handleMouseDown}
+          onMouseUp={handleMouseUp}
+          onMapClick={() => { }}
+          onMouseMove={handleMouseMove}
         />
         <ImageOverlay url={imageUrl} bounds={bounds} interactive={false} />
 
         {/* Drawing Preview */}
         {drawingRect && (
-          <Rectangle 
-            bounds={drawingRect} 
-            pathOptions={{ color: '#fbbf24', dashArray: '5, 5', fillOpacity: 0.1 }} 
+          <Rectangle
+            bounds={drawingRect}
+            pathOptions={{ color: '#fbbf24', dashArray: '5, 5', fillOpacity: 0.1 }}
           />
         )}
-        
+
         {/* Render all mapped shelves */}
         {Object.entries(shelves).map(([id, shelf]) => {
           const isSelected = id === activeShelfId;
@@ -187,7 +202,7 @@ const MapView = ({
             [shelf.y, shelf.x],
             [shelf.y + shelf.h, shelf.x + shelf.w]
           ];
-          
+
           return (
             <React.Fragment key={id}>
               <Rectangle
@@ -207,10 +222,10 @@ const MapView = ({
               >
                 <Tooltip sticky>{id}</Tooltip>
               </Rectangle>
-              
+
               {isSelected && (
-                <Marker 
-                  position={[shelf.y + shelf.h / 2, shelf.x + shelf.w / 2]} 
+                <Marker
+                  position={[shelf.y + shelf.h / 2, shelf.x + shelf.w / 2]}
                   icon={pinIcon}
                 >
                   <Popup offset={[0, -20]}>
