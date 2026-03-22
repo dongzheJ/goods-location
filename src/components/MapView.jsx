@@ -55,7 +55,7 @@ const MapEvents = ({ onMapClick, onMouseMove, onMouseDown, onMouseUp }) => {
   return null;
 };
 
-const MapController = ({ bounds, mappingMode }) => {
+const MapController = ({ bounds, mappingMode, targetCenter }) => {
   const map = useMap();
   const hasInitialized = useRef(false);
   
@@ -77,6 +77,15 @@ const MapController = ({ bounds, mappingMode }) => {
       map.doubleClickZoom.enable();
     }
   }, [mappingMode, map]);
+
+  useEffect(() => {
+    if (targetCenter) {
+      // "轻微的缩进" Fly to center with a specified zoom level (e.g. 1)
+      map.flyTo(targetCenter, 1, { duration: 1.2 });
+    } else if (hasInitialized.current && bounds) {
+      map.flyToBounds(bounds, { duration: 1.2 });
+    }
+  }, [targetCenter, map, bounds]);
 
   return null;
 };
@@ -140,7 +149,9 @@ const MapView = ({
   ] : null;
 
   const activeShelf = activeShelfId ? shelves[activeShelfId] : null;
-  const flyToTarget = activeShelf ? [activeShelf.y, activeShelf.x] : null;
+  const targetCenter = activeShelf 
+    ? [activeShelf.y + activeShelf.h / 2, activeShelf.x + activeShelf.w / 2] 
+    : null;
 
   return (
     <div className="w-full h-full relative cursor-crosshair">
@@ -152,7 +163,7 @@ const MapView = ({
         className="w-full h-full bg-slate-900"
         attributionControl={false}
       >
-        <MapController bounds={bounds} mappingMode={mappingMode} />
+        <MapController bounds={bounds} mappingMode={mappingMode} targetCenter={targetCenter} />
         <MapEvents 
           onMouseDown={handleMouseDown} 
           onMouseUp={handleMouseUp} 

@@ -25,6 +25,8 @@ function App() {
   const [mappingMode, setMappingMode] = useState(false);
   const [newShelfName, setNewShelfName] = useState('');
 
+  const isSidebarActive = searchResult || mappingMode;
+
   // Helper to simplify location (e.g., 2F-BH28-07 -> B-28)
   const simplifyLocation = (loc) => {
     if (!loc) return '';
@@ -112,19 +114,45 @@ function App() {
   };
 
   return (
-    <div className="flex flex-col h-screen bg-slate-950 text-slate-100 font-sans selection:bg-blue-500/30">
+    <div className="w-full h-[100dvh] relative overflow-hidden bg-slate-950 text-slate-100 font-sans selection:bg-blue-500/30">
       {/* Header */}
-      <header className="flex items-center justify-between px-8 py-4 bg-slate-900/50 backdrop-blur-md border-b border-slate-800 z-10">
-        <div className="flex items-center gap-3">
-          <div className="bg-blue-600 p-2 rounded-lg shadow-lg shadow-blue-500/20">
-            <MapIcon className="w-6 h-6 text-white" />
+      <header className="absolute top-0 left-0 right-0 z-40 flex flex-wrap items-center justify-between gap-3 px-4 py-3 md:top-4 md:left-4 md:right-4 md:rounded-2xl bg-slate-900/80 md:bg-slate-900/60 backdrop-blur-xl border-b md:border border-slate-800 shadow-2xl pointer-events-auto">
+        <div className="flex items-center justify-between w-full md:w-auto md:justify-start gap-2 md:gap-3">
+          <div className="flex items-center gap-2 md:gap-3">
+            <div className="bg-blue-600 p-1.5 md:p-2 rounded-lg shadow-lg shadow-blue-500/20">
+              <MapIcon className="w-5 h-5 md:w-6 md:h-6 text-white" />
+            </div>
+            <h1 className="text-lg md:text-xl font-bold tracking-tight">GeoGoods <span className="hidden sm:inline text-blue-500 text-sm font-medium ml-1">货位导航系统</span></h1>
           </div>
-          <h1 className="text-xl font-bold tracking-tight">GeoGoods <span className="text-blue-500 text-sm font-medium ml-1">货位导航系统</span></h1>
+          <div className="flex md:hidden items-center gap-2">
+            <button 
+              onClick={() => setMappingMode(!mappingMode)}
+              className={`flex items-center justify-center p-2 rounded-lg transition-all ${
+                mappingMode 
+                ? 'bg-amber-500 text-amber-950 shadow-lg shadow-amber-500/20' 
+                : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
+              }`}
+              title={mappingMode ? '退出标注' : '标注模式'}
+            >
+              <Edit className="w-4 h-4" />
+            </button>
+            {mappingMode && (
+              <button 
+                onClick={exportData}
+                className="flex items-center justify-center p-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-500 transition-all shadow-lg shadow-emerald-500/20"
+                title="导出"
+              >
+                <Download className="w-4 h-4" />
+              </button>
+            )}
+          </div>
         </div>
         
-        <SearchBar onSearch={handleSearch} />
+        <div className="w-full md:w-auto md:flex-1 md:max-w-md mx-auto order-last md:order-none mt-1 md:mt-0">
+          <SearchBar onSearch={handleSearch} />
+        </div>
 
-        <div className="flex items-center gap-3">
+        <div className="hidden md:flex items-center gap-3">
           <button 
             onClick={() => setMappingMode(!mappingMode)}
             className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all ${
@@ -150,9 +178,9 @@ function App() {
       </header>
 
       {/* Main Content */}
-      <main className="flex-1 flex overflow-hidden relative">
+      <main className="absolute inset-0 z-0 w-full h-full pointer-events-auto">
         {/* Sidebar for info or mapping list */}
-        <aside className="w-80 bg-slate-900/30 backdrop-blur-sm border-r border-slate-800 p-6 flex flex-col gap-6 overflow-y-auto">
+        <aside className={`absolute bottom-0 left-0 right-0 md:top-28 md:bottom-6 md:left-6 md:right-auto md:w-80 z-30 max-h-[45vh] md:max-h-none bg-slate-900/95 md:bg-slate-900/80 backdrop-blur-xl border-t md:border border-slate-700/50 p-4 md:p-6 flex flex-col gap-4 md:gap-6 overflow-y-auto rounded-t-3xl md:rounded-2xl shadow-[0_-10px_40px_-10px_rgba(0,0,0,0.7)] md:shadow-2xl transition-all duration-500 ease-out pointer-events-auto ${isSidebarActive ? 'translate-y-0 opacity-100' : 'translate-y-[120%] md:translate-y-0 opacity-0 md:opacity-100 pointer-events-none md:pointer-events-auto'}`}>
           {searchResult && (
             <div className="bg-slate-800/80 rounded-2xl p-5 border border-blue-500/30 shadow-xl animate-in fade-in slide-in-from-left-4 duration-500">
               <div className="flex items-start justify-between mb-4">
@@ -225,7 +253,7 @@ function App() {
         </aside>
 
         {/* Map View Area */}
-        <div className="flex-1 p-6 relative">
+        <div className="w-full h-full relative">
           <MapView 
             imageUrl="/shelf-blueprint.jpg" 
             width={1206} 
@@ -238,7 +266,7 @@ function App() {
           />
           
           {/* Legend / Overlay info */}
-          <div className="absolute bottom-10 right-10 z-10 p-4 bg-slate-900/80 backdrop-blur-md border border-slate-700 rounded-2xl shadow-2xl flex flex-col gap-2">
+          <div className="absolute top-36 right-4 md:top-auto md:bottom-10 md:right-10 z-20 p-3 md:p-4 bg-slate-900/80 backdrop-blur-md border border-slate-700 rounded-xl md:rounded-2xl shadow-2xl flex flex-col gap-1.5 md:gap-2">
             <div className="flex items-center gap-3 text-xs">
               <div className="w-3 h-3 rounded-full bg-blue-500/50 border border-blue-400 shadow-[0_0_8px_rgba(59,130,246,0.5)]"></div>
               <span className="text-slate-400">常规货架</span>
